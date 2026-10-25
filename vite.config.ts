@@ -14,6 +14,8 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     watch: { ignored: ["**/vendor/**"] },
+    // The demo operator runs in server/demo/main.ts (scripts/run-demo-local.sh --dev).
+    proxy: { "/api/demo": "http://localhost:8080" },
   },
   worker: { format: "es" },
   // In the production build the SDK stays out of the bundle and loads from
