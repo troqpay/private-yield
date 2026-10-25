@@ -13,10 +13,13 @@ import troqpayDeploymentsJson from "./config/troqpay-testnet-deployments.json";
 
 // Pinned to NethermindEth/stellar-private-payments@ea39d0c, whose circuit
 // fingerprints match the bundled artifacts of stellar-private-payments@0.2.1.
-// ?deployment=troqpay selects the TroqPay USDC/EURC pools (allowlist +
-// blocklist, traceable view key) deployed from the same commit;
-// ?deployment=demo the open demo's own pools, with the same policies.
-const deployment = new URLSearchParams(window.location.search).get("deployment");
+// The open demo's own pools by default. ?deployment=troqpay selects the
+// TroqPay USDC/EURC pools (allowlist + blocklist, traceable view key) deployed
+// from the same commit; the environment check and the smoke and spike hooks
+// keep the public SPP pools unless they ask for another deployment.
+const params = new URLSearchParams(window.location.search);
+const diagnostics = params.has("check") || params.has("smoke") || params.has("spike");
+const deployment = params.get("deployment") ?? (diagnostics ? "public" : "demo");
 export const contractConfig = (
   deployment === "troqpay" ? troqpayDeploymentsJson : deployment === "demo" ? demoDeploymentsJson : deploymentsJson
 ) as ContractConfigInput & {

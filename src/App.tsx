@@ -1,6 +1,8 @@
 import { isConnected } from "@stellar/freighter-api";
 import { useEffect, useState } from "react";
 
+import { DemoApp } from "./demo/DemoApp";
+import { VerifyView } from "./demo/VerifyView";
 import {
   contractConfig,
   getSppClient,
@@ -24,7 +26,15 @@ declare global {
   }
 }
 
+/** `/` is the open demo, `/verify` checks a receipt; `?check=1` (and the smoke and spike hooks) the environment. */
 export function App() {
+  const params = new URLSearchParams(window.location.search);
+  if (window.location.pathname === "/verify") return <VerifyView />;
+  if (params.has("check") || params.has("smoke") || params.has("spike")) return <EnvironmentCheck />;
+  return <DemoApp />;
+}
+
+function EnvironmentCheck() {
   const [status, setStatus] = useState<EnvironmentStatus>({
     stage: "init",
     error: null,

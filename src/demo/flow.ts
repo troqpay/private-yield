@@ -209,7 +209,8 @@ export async function cashOutB(session: DemoSession): Promise<{ before: bigint; 
 
 export async function readBalances(session: DemoSession): Promise<Record<CompanyName, CompanyBalances>> {
   await session.client.sync();
-  const usdcPerShare = await readSharePrice(session.wallets.A.api);
+  // Before step 1 the accounts do not exist yet: show zero, not a spinner.
+  const usdcPerShare = await readSharePrice(session.wallets.A.api).catch(() => BigInt(0));
   const read = async (company: CompanyName): Promise<CompanyBalances> => {
     const address = (company === "A" ? session.companies.a : session.companies.b).publicKey();
     const pool = await session.accounts[company].pool({ poolContract: session.config.yieldPool });
