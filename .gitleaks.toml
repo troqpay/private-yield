@@ -1,0 +1,11 @@
+# Public data that looks like keys: testnet contract IDs and the SHA-256 pins
+# of the circuit proving keys. Everything else uses the default rules.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public contract IDs and circuit artifact hashes in the manifests"
+condition = "AND"
+paths = ['''src/config/[^/]+\.json''']
+regexTarget = "line"
+regexes = ['''"(tokenContractId|proving_key\.bin)"''']

@@ -1,0 +1,29 @@
+TroqPay Private Yield
+Copyright 2026 TroqPay
+
+This product includes software developed at TroqPay, licensed under the
+Apache License, Version 2.0 (see LICENSE).
+
+Third-party components, used as dependencies or as deployed contracts and not
+copied into this repository:
+
+- Stellar Private Payments (pools, ASP, circuits and SDK), by Nethermind.
+  https://github.com/NethermindEth/stellar-private-payments
+  Apache-2.0. The compiled circuit artifacts shipped in the
+  stellar-private-payments npm package incorporate iden3/circomlib templates
+  under LGPL-3.0; the package carries their notice and licenses
+  (dist/circuits/NOTICE.txt, dist/licenses/). Contracts deployed from commit
+  ea39d0c.
+
+- DeFindex (vault and factory), by Paltalabs.
+  https://github.com/paltalabs/defindex
+  GPL-3.0. Used only as instances deployed by the public DeFindex factory;
+  no DeFindex code is included here.
+
+- Privy embedded wallets, by Privy. Proprietary SDK; used only through the
+  raw-hash signing interface in src/core/privy-signer.ts.
+
+- Stellar SDK (@stellar/stellar-sdk), by the Stellar Development Foundation.
+  Apache-2.0.
+
+"TroqPay" is a trademark of TroqPay and is not licensed under Apache-2.0.

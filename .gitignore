@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env*
+# Reference clones and scratch checks, never published from here.
+vendor/
+sdk-check-spp/
+smoke-results/
