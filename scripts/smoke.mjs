@@ -11,6 +11,9 @@
 //   privatepay-b on the Private Yield pool, so the App shows a received payment
 // --transact signs in this Node process with the testnet Stellar CLI identities
 // privatepay-a / privatepay-b. Keys never reach the page or the output.
+//   --url <base> checks an already running server instead of the Vite dev server
+//   --demo <url> runs the five steps of the open demo page at <url>, as a visitor
+//   would (its disposable keys stay in the page)
 import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -24,7 +27,10 @@ import { chromium } from "playwright-core";
 // --url <base> checks a server that is already running (for example
 // `npm run build && npm start`) instead of starting the Vite dev server.
 const URL_ARG = process.argv.includes("--url") ? process.argv[process.argv.indexOf("--url") + 1] : null;
-const BASE_URL = URL_ARG ?? "http://localhost:5173/";
+const DEMO_URL = process.argv.includes("--demo") ? process.argv[process.argv.indexOf("--demo") + 1] : null;
+const BASE_URL = DEMO_URL ?? URL_ARG ?? "http://localhost:5173/";
+const DEMO_STEPS = ["setup", "pay", "yield", "prove", "cashout"];
+const DEMO_STEP_TIMEOUT_MS = 10 * 60_000;
 const TIMEOUT_MS = 5 * 60_000;
 // --yield runs the flow on the pool of TroqPay vault shares (DeFindex), then
 // simulates yield and redeems B's shares for USDC.
@@ -71,19 +77,23 @@ const CANONICAL_VK_HASHES = {
 const STELLAR_CLI =
   process.env.STELLAR_CLI ?? (process.platform === "win32" ? "C:\\Program Files (x86)\\Stellar CLI\\stellar.exe" : "stellar");
 
-const vite = URL_ARG
-  ? null
-  : spawn(process.execPath, ["node_modules/vite/bin/vite.js"], { stdio: ["ignore", "pipe", "pipe"] });
+const vite =
+  URL_ARG || DEMO_URL
+    ? null
+    : spawn(process.execPath, ["node_modules/vite/bin/vite.js"], { stdio: ["ignore", "pipe", "pipe"] });
 vite?.stderr.on("data", (chunk) => process.stderr.write(chunk));
 
 let browser;
 try {
   await waitForServer();
   browser = await chromium.launch({ channel: "msedge", headless: true });
-  if (TRANSACT) {
+  if (DEMO_URL) {
+    await demo();
+  } else if (TRANSACT) {
     await transact();
   } else {
-    const page = await openPage(await browser.newContext(), "");
+    // "/" is the open demo; the environment check lives at ?check=1.
+    const page = await openPage(await browser.newContext(), "?check=1");
     const status = await waitForReady(page.page);
     report({ ...summarize(status), consoleErrors: page.errors.slice(0, 5) });
     process.exitCode = status?.stage === "ready" && status.publicFeed !== null ? 0 : 1;
@@ -91,6 +101,39 @@ try {
 } finally {
   await browser?.close();
   vite?.kill();
+}
+
+// The open demo page, step by step: each step must end in data-state="done".
+async function demo() {
+  const { page, errors } = await openPage(await browser.newContext(), "");
+  await page.waitForSelector("[data-testid=step-setup]:not([disabled])", { timeout: TIMEOUT_MS });
+  const steps = {};
+  for (const step of DEMO_STEPS) {
+    const button = page.locator(`[data-testid=step-${step}]`);
+    const started = Date.now();
+    await button.click();
+    await page.waitForFunction(
+      (id) => ["done", "error"].includes(document.querySelector(`[data-testid=step-${id}]`)?.getAttribute("data-state") ?? ""),
+      step,
+      { timeout: DEMO_STEP_TIMEOUT_MS },
+    );
+    const state = await button.getAttribute("data-state");
+    const error = state === "error" ? await button.locator("xpath=..").locator(".error").textContent() : null;
+    steps[step] = { state, seconds: Math.round((Date.now() - started) / 1000), error };
+    if (state !== "done") break;
+  }
+  report({
+    steps,
+    publicLedger: await page
+      .locator("[data-testid=panel-public] a[data-label]")
+      .evaluateAll((links) => links.map((link) => ({ label: link.getAttribute("data-label"), href: link.href }))),
+    auditor: await page.locator("[data-testid=panel-auditor] li").allTextContents(),
+    receipt: (await page.locator("[data-testid=receipt]").allTextContents())[0] ?? null,
+    cashOut: (await page.locator("[data-testid=cashout]").allTextContents())[0] ?? null,
+    consoleErrors: errors.slice(0, 5),
+  });
+  const results = Object.values(steps);
+  process.exitCode = results.length === DEMO_STEPS.length && results.every((step) => step.state === "done") ? 0 : 1;
 }
 
 async function transact() {
