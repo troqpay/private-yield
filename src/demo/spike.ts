@@ -2,15 +2,15 @@
 // one SPP client. A pays B privately on the public SPP XLM pool (no
 // admission), and A tries to buy test USDC on the testnet DEX. Driven by
 // scripts/spike-demo.mjs.
-import { Asset, Keypair, Networks, Operation, rpc, scValToNative, TransactionBuilder } from "@stellar/stellar-sdk";
+import { Keypair, Networks, rpc, scValToNative, TransactionBuilder } from "@stellar/stellar-sdk";
 
 import { prepareVaultCall } from "../../server/sponsor";
 import { createPrivatePaySigner } from "../core/privy-signer";
 import { contractConfig, getSppClient, NETWORK_PASSPHRASE, RPC_URL } from "../spp";
 import { burnerRawHashSigner, createBurner, fundWithFriendbot, selfPaidTransactions } from "./burner";
+import { buyTestUsdc } from "./test-usdc";
 
 const PUBLIC_XLM_POOL = "CA4J475XJXKSHL2RCFLNQSQEB5DN4NA5QHBVCACH2WKGZLZVXT2ZFMS7";
-const USDC = new Asset("USDC", "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5");
 
 type Step = { step: string; seconds: number; value?: unknown; error?: string };
 
@@ -46,39 +46,6 @@ function openCompany(client: Awaited<ReturnType<typeof getSppClient>>["client"],
     { networkPassphrase: NETWORK_PASSPHRASE, userAddress: address },
     createPrivatePaySigner({ address, signRawHash: burnerRawHashSigner(keypair), ...selfPaidTransactions(address) }),
   );
-}
-
-async function buyTestUsdc(keypair: Keypair) {
-  const server = new rpc.Server(RPC_URL);
-  const transaction = new TransactionBuilder(await server.getAccount(keypair.publicKey()), {
-    fee: "100000",
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(Operation.changeTrust({ asset: USDC }))
-    .addOperation(
-      Operation.pathPaymentStrictReceive({
-        sendAsset: Asset.native(),
-        sendMax: "2000",
-        destination: keypair.publicKey(),
-        destAsset: USDC,
-        destAmount: "100",
-        path: [],
-      }),
-    )
-    .setTimeout(60)
-    .build();
-  transaction.sign(keypair);
-  const before = (await server.getAccountEntry(keypair.publicKey())).balance().toBigInt();
-  const sent = await server.sendTransaction(transaction);
-  if (sent.status === "ERROR") return { status: "rejected", error: sent.errorResult?.result().switch().name };
-  const result = await server.pollTransaction(sent.hash, { attempts: 30 });
-  const after = (await server.getAccountEntry(keypair.publicKey())).balance().toBigInt();
-  return {
-    status: result.status,
-    hash: sent.hash,
-    xlmSpent: Number(before - after) / 1e7,
-    usdc: result.status === "SUCCESS" ? (await server.getTrustline(keypair.publicKey(), USDC)).balance().toBigInt().toString() : null,
-  };
 }
 
 const VAULT = "CANERND5MTY6QZN6FBDNY4TAMIIEKMYO4MCGLFESIY5O7XF6ILUDWANB";
@@ -123,7 +90,7 @@ const spike = {
       const a = createBurner();
       const b = createBurner();
       await timed(steps, "friendbot A and B", () => Promise.all([fundWithFriendbot(a.publicKey()), fundWithFriendbot(b.publicKey())]));
-      await timed(steps, "A buys 100 USDC on the DEX", () => buyTestUsdc(a));
+      await timed(steps, "A buys 100 USDC on the DEX", () => buyTestUsdc(new rpc.Server(RPC_URL), a));
       const [accountA, accountB] = await Promise.all([openCompany(client, a), openCompany(client, b)]);
       demo = { a, b, accountA, accountB };
       const leaves: Record<string, string> = {};
@@ -200,7 +167,7 @@ const spike = {
       await client.sync();
       const poolB = await accountB.pool({ poolContract: PUBLIC_XLM_POOL });
       await timed(steps, "balances", async () => ({ a: (await poolA.balance()).toString(), b: (await poolB.balance()).toString() }));
-      await timed(steps, "A buys 100 USDC on the DEX", () => buyTestUsdc(a));
+      await timed(steps, "A buys 100 USDC on the DEX", () => buyTestUsdc(new rpc.Server(RPC_URL), a));
     } catch {
       // The failing step is already recorded.
     }
