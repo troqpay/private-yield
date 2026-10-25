@@ -193,7 +193,7 @@ export function assertVaultCall(transaction: Transaction, walletAddress: string,
 }
 
 // The Stellar SDK rejects a signature that does not verify against the key.
-function attachSignature(transaction: Transaction, publicKey: string, signatureHex: string): void {
+export function attachSignature(transaction: Transaction, publicKey: string, signatureHex: string): void {
   const normalized = signatureHex.replace(/^0x/u, "");
   if (!/^[0-9a-f]{128}$/iu.test(normalized)) throw new Error("invalid_signature");
   const bytes = normalized.match(/../gu)!.map((byte) => Number.parseInt(byte, 16));

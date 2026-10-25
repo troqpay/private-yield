@@ -21,7 +21,10 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { Asset, Keypair, Networks, rpc, TransactionBuilder } from "@stellar/stellar-sdk";
 import { chromium } from "playwright-core";
 
-const BASE_URL = "http://localhost:5173/";
+// --url <base> checks a server that is already running (for example
+// `npm run build && npm start`) instead of starting the Vite dev server.
+const URL_ARG = process.argv.includes("--url") ? process.argv[process.argv.indexOf("--url") + 1] : null;
+const BASE_URL = URL_ARG ?? "http://localhost:5173/";
 const TIMEOUT_MS = 5 * 60_000;
 // --yield runs the flow on the pool of TroqPay vault shares (DeFindex), then
 // simulates yield and redeems B's shares for USDC.
@@ -68,10 +71,10 @@ const CANONICAL_VK_HASHES = {
 const STELLAR_CLI =
   process.env.STELLAR_CLI ?? (process.platform === "win32" ? "C:\\Program Files (x86)\\Stellar CLI\\stellar.exe" : "stellar");
 
-const vite = spawn(process.execPath, ["node_modules/vite/bin/vite.js"], {
-  stdio: ["ignore", "pipe", "pipe"],
-});
-vite.stderr.on("data", (chunk) => process.stderr.write(chunk));
+const vite = URL_ARG
+  ? null
+  : spawn(process.execPath, ["node_modules/vite/bin/vite.js"], { stdio: ["ignore", "pipe", "pipe"] });
+vite?.stderr.on("data", (chunk) => process.stderr.write(chunk));
 
 let browser;
 try {
@@ -87,7 +90,7 @@ try {
   }
 } finally {
   await browser?.close();
-  vite.kill();
+  vite?.kill();
 }
 
 async function transact() {
@@ -433,5 +436,5 @@ async function waitForServer() {
     }
     await sleep(1_000);
   }
-  throw new Error("vite dev server did not start");
+  throw new Error(`server did not start at ${BASE_URL}`);
 }

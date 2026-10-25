@@ -8,15 +8,18 @@ import init, {
 
 import circuitsJson from "./config/circuits.json";
 import deploymentsJson from "./config/testnet-deployments.json";
+import demoDeploymentsJson from "./config/demo-testnet-deployments.json";
 import troqpayDeploymentsJson from "./config/troqpay-testnet-deployments.json";
 
 // Pinned to NethermindEth/stellar-private-payments@ea39d0c, whose circuit
 // fingerprints match the bundled artifacts of stellar-private-payments@0.2.1.
 // ?deployment=troqpay selects the TroqPay USDC/EURC pools (allowlist +
-// blocklist, traceable view key) deployed from the same commit.
-const useTroqpayDeployment =
-  new URLSearchParams(window.location.search).get("deployment") === "troqpay";
-export const contractConfig = (useTroqpayDeployment ? troqpayDeploymentsJson : deploymentsJson) as ContractConfigInput & {
+// blocklist, traceable view key) deployed from the same commit;
+// ?deployment=demo the open demo's own pools, with the same policies.
+const deployment = new URLSearchParams(window.location.search).get("deployment");
+export const contractConfig = (
+  deployment === "troqpay" ? troqpayDeploymentsJson : deployment === "demo" ? demoDeploymentsJson : deploymentsJson
+) as ContractConfigInput & {
   rpcUrl: string;
   networkPassphrase: string;
 };

@@ -16,4 +16,12 @@ export default defineConfig({
     watch: { ignored: ["**/vendor/**"] },
   },
   worker: { format: "es" },
+  // In the production build the SDK stays out of the bundle and loads from
+  // the same path the dev server uses; server/demo/main.ts serves it.
+  build: {
+    rollupOptions: {
+      external: ["stellar-private-payments"],
+      output: { paths: { "stellar-private-payments": "/node_modules/stellar-private-payments/js/index.js" } },
+    },
+  },
 });

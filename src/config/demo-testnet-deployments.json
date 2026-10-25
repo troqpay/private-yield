@@ -1,0 +1,79 @@
+{
+  "network": "testnet",
+  "kdf_domain": "Private Yield Demo",
+  "deployer": "GDB3EADRIUACSOZF655YNSYDPTCG7DD5RKT7CXWSBFMQOBTUGAFV6LYW",
+  "admin": "GDB3EADRIUACSOZF655YNSYDPTCG7DD5RKT7CXWSBFMQOBTUGAFV6LYW",
+  "asp_membership": "CBKAD242VE3TRF7URVNAMWNS36JGZVVHSMGHB2JPU3IM5SQXOIDFVH6G",
+  "added_asp_memberships": [],
+  "asp_non_membership": "CDYDMR6FKNNP7VZIPK2RVAZDL337SI7C2YXOVD4K4KBZHBJEMIO6ZH73",
+  "asp_membership_wasm_hash": "738c6d0746a3d6c6a3e32312776ef453eb0e1ae0034db8cf7d88c7da2a589ea6",
+  "asp_non_membership_wasm_hash": "4ffb59047d1452bc5e3ce645ce31ad105dc00d63744374047c8961e798a643c5",
+  "verifiers": {
+    "AB_gvk_T": "CB5LRBHZVPM3XMUUVTVDRPGVRGHDKVWBEZEKIP4FZETJRS6O2TMHYOIQ"
+  },
+  "public_key_registry": "CABZFHJSCXVOVOEJGUHT6XX52AEAZOTDTYSEMBIJIQSYXO3YRJU3ONKG",
+  "pools": [
+    {
+      "poolContractId": "CBPWSNW3UM4VYIDNW3MBZYRXI2NNNUPV2HEQHA5DKUN2AEFFVVBLROIR",
+      "tokenContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "deploymentLedger": 5382797,
+      "enabled": true,
+      "policyFlags": [
+        "allowlist",
+        "blocklist"
+      ],
+      "asset": {
+        "kind": "classic",
+        "code": "USDC",
+        "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      "gvkMode": "traceable",
+      "gvkAuthorityPubKey": {
+        "x": "0x1c12624d6e9404e7c701a2ed552a1b565e9fc6bcd42ce0d022fc6796fbdc07cd",
+        "y": "0x2673dccc203a0f17645ecfe1578b6292b693e3c3cf100991599822fe31fcff07"
+      }
+    },
+    {
+      "poolContractId": "CAE6HNKLDQ6VON5TCMCXZ52CPFAZ6NPOZCOMUXRAG2LFNLL6LOIWGTDI",
+      "tokenContractId": "CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ",
+      "deploymentLedger": 5382799,
+      "enabled": true,
+      "policyFlags": [
+        "allowlist",
+        "blocklist"
+      ],
+      "asset": {
+        "kind": "classic",
+        "code": "EURC",
+        "issuer": "GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO"
+      },
+      "gvkMode": "traceable",
+      "gvkAuthorityPubKey": {
+        "x": "0x1c12624d6e9404e7c701a2ed552a1b565e9fc6bcd42ce0d022fc6796fbdc07cd",
+        "y": "0x2673dccc203a0f17645ecfe1578b6292b693e3c3cf100991599822fe31fcff07"
+      }
+    },
+    {
+      "poolContractId": "CAMO33KOE6GHNHJMCPQWPBZTHCACLX6M7X6USNXCRXRTSOZMD4ZDNFLI",
+      "tokenContractId": "CANERND5MTY6QZN6FBDNY4TAMIIEKMYO4MCGLFESIY5O7XF6ILUDWANB",
+      "deploymentLedger": 5382821,
+      "enabled": true,
+      "policyFlags": [
+        "allowlist",
+        "blocklist"
+      ],
+      "asset": {
+        "kind": "contract",
+        "contractId": "CANERND5MTY6QZN6FBDNY4TAMIIEKMYO4MCGLFESIY5O7XF6ILUDWANB",
+        "symbol": "tyUSDC"
+      },
+      "gvkMode": "traceable",
+      "gvkAuthorityPubKey": {
+        "x": "0x1c12624d6e9404e7c701a2ed552a1b565e9fc6bcd42ce0d022fc6796fbdc07cd",
+        "y": "0x2673dccc203a0f17645ecfe1578b6292b693e3c3cf100991599822fe31fcff07"
+      }
+    }
+  ],
+  "rpcUrl": "https://soroban-testnet.stellar.org/",
+  "networkPassphrase": "Test SDF Network ; September 2015"
+}
