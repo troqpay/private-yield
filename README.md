@@ -142,6 +142,23 @@ AI-assisted development used Codex and Claude Code for implementation,
 debugging, tests, documentation and submission preparation. The team reviewed
 and validated the resulting code and testnet transactions.
 
+## Security notes
+
+- **No secret is in this repository or its history.** Contract IDs, authority
+  public keys, hashes and the hosted demo URL are public testnet evidence.
+- **The demo view key is not the TroqPay view key.** The open demo runs on its
+  own pools, allowlist and viewing key. Publishing the demo key reveals demo
+  pool activity only, never the TroqPay pools.
+- **Privileged smoke modes stay on this machine.** `--transact`,
+  `--troqpay-pools`, `--yield`, `--inspect` and `--pay-to` sign with local
+  Stellar CLI identities and read the local view key, so they refuse any target
+  that is not `http://localhost` or `http://127.0.0.1`. A remote `--url` is
+  read-only and a remote `--demo` behaves as a visitor, with no local keys.
+- **The demo operator is meant for local use.** Its admission limit (20 valid
+  admissions per peer per hour) only counts well-formed requests, forgets
+  idle peers and caps how many it tracks. Put it behind an edge rate limit and
+  a trusted-proxy setup before exposing it on the Internet.
+
 ## Limits
 
 - **Testnet only.** All assets and accounts are test assets.

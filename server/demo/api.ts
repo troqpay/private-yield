@@ -21,6 +21,9 @@ const INCLUSION_FEE = "1000000";
 const BN254_PRIME = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 const LEAF_ADDED_TOPIC = xdr.ScVal.scvSymbol("LeafAdded").toXDR("base64");
 const ADMISSIONS_PER_HOUR = 20;
+const ADMISSION_WINDOW_MS = 3_600_000;
+// Peers the limiter remembers at once; the oldest go first when it is full.
+const ADMISSION_PEERS_MAX = 10_000;
 const YIELD_COOLDOWN_MS = 60_000;
 
 export type DemoRpc = Pick<
@@ -112,12 +115,25 @@ export async function assertTestnet(server: Pick<rpc.Server, "getNetwork">): Pro
 }
 
 /** HTTP for /api/demo/*. */
-export function createDemoApiHandler(service: DemoService | null, now: () => number = Date.now) {
+export function createDemoApiHandler(
+  service: DemoService | null,
+  now: () => number = Date.now,
+  peersMax: number = ADMISSION_PEERS_MAX,
+) {
+  // Valid admissions per peer in the last hour. Only a well-formed request
+  // spends the quota, so malformed traffic cannot lock a peer out, and the
+  // map forgets peers whose hour is over so it cannot grow without bound.
   const admissions = new Map<string, number[]>();
-  const withinAdmissionLimit = (ip: string) => {
+  const takeAdmission = (ip: string) => {
     const at = now();
-    const recent = (admissions.get(ip) ?? []).filter((time) => at - time < 3_600_000);
+    for (const [peer, times] of admissions) {
+      if (times.every((time) => at - time >= ADMISSION_WINDOW_MS)) admissions.delete(peer);
+    }
+    const recent = (admissions.get(ip) ?? []).filter((time) => at - time < ADMISSION_WINDOW_MS);
     if (recent.length >= ADMISSIONS_PER_HOUR) return false;
+    if (!admissions.has(ip) && admissions.size >= peersMax) {
+      admissions.delete(admissions.keys().next().value!);
+    }
     admissions.set(ip, [...recent, at]);
     return true;
   };
@@ -129,9 +145,10 @@ export function createDemoApiHandler(service: DemoService | null, now: () => num
       if (route === "GET /api/demo/health") return send(response, 200, { status: "ok", ...service.health() });
       if (route === "GET /api/demo/view-key") return send(response, 200, { status: "ok", privateKey: service.viewKey() });
       if (route === "POST /api/demo/admit") {
-        if (!withinAdmissionLimit(request.socket.remoteAddress ?? "unknown")) throw new DemoError("rate_limited", 429);
         const { aspLeaf } = (await readJson(request)) as { aspLeaf?: unknown };
         if (typeof aspLeaf !== "string") throw new DemoError("invalid_leaf", 400);
+        parseFieldElement(aspLeaf);
+        if (!takeAdmission(request.socket.remoteAddress ?? "unknown")) throw new DemoError("rate_limited", 429);
         return send(response, 200, { status: "ok", ...(await service.admit(aspLeaf)) });
       }
       if (route === "POST /api/demo/yield") return send(response, 200, { status: "ok", ...(await service.sendYield()) });

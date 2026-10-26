@@ -25,6 +25,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { Asset, Keypair, Networks, rpc, TransactionBuilder } from "@stellar/stellar-sdk";
 import { chromium } from "playwright-core";
 
+import { isLoopback } from "./lib/loopback.mjs";
+
 // --url <base> checks a server that is already running (for example
 // `npm run build && npm start`) instead of starting the Vite dev server.
 const URL_ARG = process.argv.includes("--url") ? process.argv[process.argv.indexOf("--url") + 1] : null;
@@ -43,6 +45,14 @@ const YIELD = Boolean(PAY_TO) || process.argv.includes("--yield");
 const INSPECT = process.argv.includes("--inspect");
 const TROQPAY_POOLS = YIELD || process.argv.includes("--troqpay-pools");
 const TRANSACT = TROQPAY_POOLS || process.argv.includes("--transact");
+// Modes that sign with local identities or read the TroqPay view key hand
+// those capabilities to the page, so they only ever run against a server on
+// this machine. A remote --url or --demo stays read-only / visitor-only.
+const PRIVILEGED = TRANSACT || INSPECT;
+if (PRIVILEGED && !isLoopback(BASE_URL)) {
+  console.error(`privileged smoke modes only run against localhost, not ${BASE_URL}`);
+  process.exit(2);
+}
 const EPHEMERAL = process.argv.includes("--ephemeral");
 const FEE_BUMP = process.argv.includes("--fee-bump");
 const FEE_BUMP_BASE_FEE = "1000000"; // Soroban inclusion floor, as in troqpay-api
