@@ -8,6 +8,40 @@ can hide payment details, but idle shielded balances do not earn. Private Yield
 composes SPP with a DeFindex vault: vault shares are held and transferred inside
 the private pool, so privacy and the yield-bearing representation coexist.
 
+## Who this is for
+
+TroqPay serves Brazilian companies that sell locally and operate globally: an
+importer paying a supplier in Asia, a software company paying contractors
+abroad, an exporter being paid by a buyer in Mexico. Today they pay in public
+USDC from the TroqPay Global Account, and every transfer leaves a public record
+of the supplier, the price and the cadence, which a competitor, a customer or
+the supplier's other clients can read on any explorer. The alternative, a
+shielded pool, leaves the money idle, and a treasury that already earns on its
+Digital Dollar balance will not park it where it earns nothing.
+
+With Private Yield the company keeps the normal Send screen and chooses only
+who and how much. If the recipient is another TroqPay company, the payment
+leaves privately, from a protected balance that keeps earning. If not, it goes
+out publicly as before. Nothing else changes for the user: no XLM, no pool, no
+keys on screen. The recipient sees the payer's name on its statement and can
+prove one payment to an accountant or a bank with a receipt that reveals
+nothing else.
+
+## Why this is new
+
+Private pools on public chains stay small because a shielded balance does not
+earn, and a small pool protects nobody. Private Yield removes that trade-off:
+the protected balance **is** the yield position (DeFindex vault shares held
+inside the SPP pool), so staying protected becomes the default rather than a
+sacrifice, and every company that joins makes the pool larger and the privacy
+stronger for everyone already in it. The privacy layer is paid for by the
+20% performance fee on yield and a per-payment fee, not by locking capital.
+
+It also fits how regulated B2B payments work: only companies that passed KYB
+are admitted, the operator holds a traceable view key (as a bank sees its own
+ledger), and the recipient, not the operator, chooses what to disclose and to
+whom. Private for the market, auditable by TroqPay.
+
 The judged product is this flow inside the existing TroqPay Global Account. The
 TroqPay application and API remain proprietary. This repository is the public,
 reproducible core and evaluator harness: rules, signer, sponsor checks, receipt
@@ -129,17 +163,19 @@ transactions and contract addresses are in [docs/evidence.md](docs/evidence.md).
 
 ## HackMeridian delivery
 
-TroqPay entered the Scale category as an existing Global Account product.
-During HackMeridian, we completed and validated the Private Yield product
-experience: global testnet onboarding, simulated Etherfuse approval, Privy
-wallet activation, automatic protected balances, private recipient discovery,
-the Send flow, sponsor hardening, payer attribution, receipts, walletless
-verification, balance UX and end-to-end payments between distinct companies.
+TroqPay entered the Scale category as an existing Global Account product. The
+table is the honest starting point and end point of the hackathon work; the
+existing TroqPay platform and the upstream SPP and DeFindex components are not
+claimed as hackathon work.
 
-The judge-ready evaluator, reproducible public repository, complete
-cross-company tests and final evidence were also built and run during the
-event. The existing TroqPay platform and the upstream SPP and DeFindex
-components are not claimed as hackathon work.
+| | Starting point (built 21–24 Oct, before the event) | Delivered during HackMeridian (25–26 Oct) |
+|---|---|---|
+| Product | Global Account in production; on testnet, SPP + DeFindex composed (pools, vault, share pool) and private payments wired into the Send flow, the statement and a receipt page, tested with one real company and a CLI test identity | The experience finished and validated end to end by **two distinct TroqPay companies** onboarded during the event, with the fixes that made it hold up for real users |
+| Paying | Automatic private routing and sponsor fee bump in place; first-use failures (Privy signing stalls, cold prover timeouts, silent activation errors) | Privy wallet proxy wait and signing timeout, proof warm-up, visible activation state with retry, balance UX aligned with automatic protection |
+| Receiving | Statement lines with the payer recorded from the chain | Trust states for the receiving side, protected-balance synchronisation made clear, internal metadata hidden from receipts |
+| Trust | Sponsor validated contract, method, source wallet, fee cap and signature | Internal rate limits sized for two live companies; security review of the public repository run and its three findings closed |
+| Onboarding | Brazilian company only | Country-adaptive onboarding exercised with a new company; Etherfuse approval simulated for the demo |
+| Evaluator | Nothing public | This repository: public core, deployment scripts, tests, browser smoke, open demo page, evidence and a verifiable receipt |
 
 AI-assisted development used Codex and Claude Code for implementation,
 debugging, tests, documentation and submission preparation. The team reviewed
