@@ -1,9 +1,11 @@
 # Evidence (Stellar Testnet)
 
 Everything below is on testnet with test assets. Open a transaction at
-`https://stellar.expert/explorer/testnet/tx/<hash>`. The original proof was
-built from 21 to 23 October 2026, before HackMeridian, and is declared as prior
-work. The last section records the product integration completed at the event.
+`https://stellar.expert/explorer/testnet/tx/<hash>`. This evidence set validates
+the HackMeridian delivery. The complete TroqPay integration, evaluator,
+cross-company end-to-end tests and final evidence were completed during the
+event. Contract deployment timestamps identify the testnet resources used by
+the build; they are not the delivery date of the product experience.
 
 ## Contracts
 

@@ -124,18 +124,19 @@ The private payment is successful in ledger `5,391,271`. Public observers see
 the payer call the pool, but not a plain recipient or amount. Additional
 transactions and contract addresses are in [docs/evidence.md](docs/evidence.md).
 
-## Prior work disclosure
+## HackMeridian delivery
 
-Before HackMeridian, TroqPay already had its Global Account product,
-authentication, onboarding, ledger, compliance operations and application
-infrastructure. An initial Private Yield proof of concept and the testnet
-contracts listed in `docs/evidence.md` also existed and are explicitly dated.
+TroqPay entered the Scale category as an existing Global Account product.
+During HackMeridian, we completed and validated the Private Yield product
+experience: global testnet onboarding, simulated Etherfuse approval, Privy
+wallet activation, automatic protected balances, private recipient discovery,
+the Send flow, sponsor hardening, payer attribution, receipts, walletless
+verification, balance UX and end-to-end payments between distinct companies.
 
-During HackMeridian we integrated Private Yield into the TroqPay product:
-global testnet onboarding, simulated Etherfuse approval, Privy wallet
-activation, automatic protected balances, private recipient discovery, the
-Send flow, sponsor hardening, payer attribution, receipts, walletless
-verification, balance UX and end-to-end evidence for two distinct companies.
+The judge-ready evaluator, reproducible public repository, complete
+cross-company tests and final evidence were also built and run during the
+event. The existing TroqPay platform and the upstream SPP and DeFindex
+components are not claimed as hackathon work.
 
 AI-assisted development used Codex and Claude Code for implementation,
 debugging, tests, documentation and submission preparation. The team reviewed
