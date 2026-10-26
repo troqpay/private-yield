@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "circuit": {
+    "name": "selectiveDisclosure_1",
+    "levels": 20,
+    "nNotes": 1,
+    "vkHash": "0x6fc11e281a749639762df720450be1182051c93d83e6cff36248896508d85ee2"
+  },
+  "context": {
+    "network": "testnet",
+    "poolAddress": "CBVVA7LJ6PJ2CG47RA4JLKERHUVO56AAIT4DLTBLDWZVABM3GW267A24",
+    "authorityLabel": "TroqPay Compliance (demo)",
+    "authorityIdentityPayloadHex": "0x42e0127e7ea028099974d959f05d712a",
+    "purpose": "b2b-payment-evidence",
+    "contextNonce": "0x1166fac180801ab31d8be6ac5044f270cda20f37edae47518588879f2b893026"
+  },
+  "publicInputs": {
+    "roots": [
+      "0x25194dd8d53bcfddbbeffd3f31413dd73a84595b2e300b830c56680350b9fec9"
+    ],
+    "noteCommitments": [
+      "0x21cd847c0216eb7b730b8559202f64cb4c9afdf1ff3ae9fd5274dc9707c691c5"
+    ],
+    "extContextHash": "0x11fba460976064cdeabac02840e243def059447e48f996cc7724fad93347fdfb",
+    "nullifiers": [
+      "0x230cd87842954925dd5f2569a6a5b0ee04d5ba7ab410a5cd2d302b8e0477cbe5"
+    ],
+    "amounts": [
+      "40000000"
+    ]
+  },
+  "proofCompressedHex": "0x50e4e968c98590136e44bc97f21fb24d4d13069c9a93f299d8d2c0d1bc5109af33d39a04a5d065c725197637fe13b6c83940409d7ecf5e6a5e86c5a813e5a92c09f1032c741bd9358bda6ca389451ec3c028eabdc3bd269527ce7760b0eaae977bdcb6e718538f9630a24a57f29f0766b2c8f604b7500b57569614856361c707",
+  "issuedAt": "2026-10-23T17:04:23Z"
+}
