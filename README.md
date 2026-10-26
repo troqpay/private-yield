@@ -1,150 +1,173 @@
 # TroqPay Private Yield
 
-**Private B2B payments on Stellar that keep earning yield.**
+**Private B2B payments on Stellar, with protected balances represented by yield-vault shares.**
 
-When a company pays a supplier in stablecoins on a public chain, every
-competitor can see who it pays, how much and how often. Shielded pools fix
-that, but nobody leaves money in a pool that earns nothing, and a pool nobody
-stays in protects nobody.
+When a company pays a supplier with a public-chain stablecoin, competitors can
+observe counterparties, amounts and frequency. Stellar Private Payments (SPP)
+can hide payment details, but idle shielded balances do not earn. Private Yield
+composes SPP with a DeFindex vault: vault shares are held and transferred inside
+the private pool, so privacy and the yield-bearing representation coexist.
 
-Private Yield puts the protected balance into a yield vault. A company's
-protected money is held as shares of a [DeFindex](https://defindex.io) vault
-inside a [Stellar Private Payments](https://github.com/NethermindEth/stellar-private-payments)
-(SPP) pool. The shares keep earning while they stay private, and private
-payments are paid in those shares. Staying protected becomes the default,
-which also makes the pool larger and the privacy stronger for everyone.
+The judged product is this flow inside the existing TroqPay Global Account. The
+TroqPay application and API remain proprietary. This repository is the public,
+reproducible core and evaluator harness: rules, signer, sponsor checks, receipt
+verification, deployment manifests, tests and a browser smoke test.
 
-TroqPay integrates it into its Global Account, a business account already in
-production (Private Yield itself runs on testnet): the company picks **who**
-and **how much** in the usual Send screen, confirms once, and the payment goes
-out privately, with no XLM and no pool, keys or proofs on screen.
+- [Hosted TroqPay testnet product](https://troqpay-app-stellar-testnet.up.railway.app/)
+- [Walletless receipt verifier](https://troqpay-app-stellar-testnet.up.railway.app/privatepay/verify)
+- [Latest private payment on Stellar Expert](https://stellar.expert/explorer/testnet/tx/88363ba321522aabbfe380e03c170e4d20d9e8e5c1e215385a8cf710cd5b6bd1)
+- Built for HackMeridian 2026, Scale path
 
-> Demo video: _link added at submission_ · Built for HackMeridian 2026 (Scale track)
+## Judge quick start
 
-## What it does
+Requirements: Node.js 22.18+ and Chrome or Microsoft Edge.
 
-| | |
-|---|---|
-| Pay privately | One confirmation in Send. If the protected balance is short, public USDC enters the vault (rounded up to the next 100 USDC, so the entry does not reveal the payment) and the shares enter the pool before the private transfer. |
-| Keep earning | Protected value is vault shares; their USDC value rises as the vault earns. The vault takes a 20% performance fee on yield. |
-| Receive | The recipient sees the payment and who sent it, valued in USDC. |
-| Prove | The recipient creates a selective-disclosure receipt for one payment. Anyone verifies it against the chain, with no wallet and no login. |
-| Spend publicly | A public send larger than the public balance releases protected value first (pool, then vault), automatically. |
-| Stay compliant | Only companies that passed KYB are admitted to the pool allowlist; the operator holds a traceable view key, like a bank sees its ledger; the pools' blocklist can freeze a key (supported, not yet exercised in this demo). |
-
-## How it works
-
+```bash
+git clone https://github.com/troqpay/private-yield.git
+cd private-yield
+npm ci
+npm run check
+npm start
 ```
+
+`npm start` builds and serves the evaluator page at `http://localhost:8080`.
+In a second terminal, run the browser smoke test:
+
+```bash
+npm run smoke -- --url http://127.0.0.1:8080/
+```
+
+Expected result: `stage: "ready"`, a non-empty public feed and no console
+errors. This path needs no wallet, API key, operator key or environment file.
+Without operator keys the server intentionally serves the evaluator pages only;
+transactional operator endpoints return `503` and are not part of this check.
+
+For a self-contained testnet transaction using disposable in-memory accounts:
+
+```bash
+npm run smoke:transactional
+```
+
+That command uses Friendbot to fund two ephemeral testnet accounts, registers
+their privacy keys, deposits 5 test XLM, transfers 2 privately, creates a
+selective-disclosure receipt and verifies its four checks. Secret keys stay in
+the Node process and are never printed or written to the repository.
+
+Set `PLAYWRIGHT_CHANNEL=chrome` or
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium` when automatic browser
+detection is not suitable.
+
+## Product flow
+
+| Step | What happens |
+|---|---|
+| Activate | A TroqPay company gets a sponsored Stellar wallet and registers its private-payment keys. |
+| Protect | Public test USDC enters a DeFindex vault; the resulting SEP-41 shares enter an SPP pool. |
+| Pay | The company chooses a recipient and amount in the normal Send flow and confirms once. |
+| Receive | An admitted recipient sees the payment and identified payer inside TroqPay. |
+| Prove | The recipient creates a selective-disclosure receipt for one payment. Anyone can verify it without a wallet or login. |
+| Spend | A public send can release protected value through the pool and vault when necessary. |
+
+The production design admits companies after compliance approval. For the
+HackMeridian testnet demo, Etherfuse approval is simulated because its sandbox
+approval flow changed during the event. Wallets, USDC trustlines, contract
+calls, private payments, receipts and verification remain real testnet actions.
+
+## Architecture
+
+```text
 Company browser (Privy wallet, no XLM)
-  ├─ SPP SDK: keys, notes, Groth16 proofs, pool transactions ──► Stellar RPC
-  └─ Privy signer: signs raw hashes only (SEP-53 message, auth entry, tx hash)
-Sponsor backend (operator)
-  ├─ checks every transaction: one call, allowed contract, company's own wallet, fee cap
-  ├─ wraps it in a fee bump, so the company pays no network fee
-  └─ builds the vault deposit / withdrawal the wallet signs
+  ├─ SPP SDK: keys, notes, Groth16 proofs and pool calls ──► Stellar RPC
+  └─ Privy signer: SEP-53 message, auth-entry and transaction hashes
+
+Sponsor backend
+  ├─ accepts one allowed contract call from the company's wallet
+  ├─ enforces the contract and fee cap
+  └─ wraps the signed transaction in a fee bump
+
 Stellar Testnet
-  ├─ DeFindex vault over Circle USDC (factory-created, not upgradable) → SEP-41 shares
-  ├─ SPP pool holding the shares (allowlist + blocklist ASP, traceable view key)
-  └─ SPP pools for USDC and EURC, key registry, ASP contracts, verifier
+  ├─ DeFindex vault over Circle test USDC → SEP-41 shares
+  ├─ SPP pool holding the shares
+  └─ allowlist, blocklist, key registry and Groth16 verifier contracts
 ```
 
-Nothing is forked. The vault is a standard DeFindex vault created by the public
-factory, and the pools are standard SPP contracts from commit `ea39d0c`. The
-new code is the product layer: the Private Yield rules, the Privy signer, the
-sponsor checks and the payer lookup. Details in [docs/architecture.md](docs/architecture.md)
-and [docs/private-yield.md](docs/private-yield.md).
+Nothing is forked. The vault is a standard DeFindex vault created through its
+factory. The pools are standard SPP contracts from commit `ea39d0c`. TroqPay's
+code is the composition and product layer: Private Yield rules, Privy signer,
+sponsor validation, payer lookup, receipts and the Global Account experience.
 
-## Stellar stack
+The implementation uses Stellar RPC for simulation, submission, polling,
+events and ledger-entry reads. It does not depend on Horizon.
 
-- **Stellar RPC only, no Horizon.** Simulation, submission and polling;
-  `getEvents` and `getTransaction` for the payer lookup; `getAccountEntry` and
-  `getTrustline` for balances in the smoke tests.
-- **Soroban contracts:** SPP pools with BN254 Groth16 verification, ASP
-  membership and non-membership trees, a key registry, and a DeFindex vault.
-- **SEP-41:** vault shares are the pool's token.
-- **Fee bumps:** a sponsor pays every fee; companies hold no XLM.
-- **SEP-53:** the message a company signs once to derive its privacy keys.
-- **Stellar asset contracts** for Circle USDC and EURC.
+## Repository map
 
-## Repository
-
-| Path | What |
+| Path | Contents |
 |---|---|
-| `src/core/` | Generic modules: `private-yield.ts` (payment and top-up rules), `privy-signer.ts` (SPP wallet over Privy raw-hash signing), `receipt.ts` (receipts and verification links) |
-| `server/` | Sponsor checks and fee bump, vault calls, share price (`sponsor.ts`); payer lookup over RPC (`payers.ts`) |
-| `src/` | Environment check page and the smoke-test hooks |
-| `src/config/` | Testnet manifests (contract IDs are public) and the circuit lock |
-| `scripts/` | Deploy scripts and `smoke.mjs` |
-| `tests/` | Unit tests for `core` and `server` |
-| `docs/` | Architecture, privacy model, Private Yield, evidence, roadmap |
+| `src/core/` | Private Yield rules, Privy-compatible signer and receipt helpers |
+| `server/` | Sponsor validation, fee bump, vault calls, payer lookup and evaluator server |
+| `src/demo/` | Public evaluator UI and disposable-company flow |
+| `src/config/` | Public testnet contract manifests and pinned circuit metadata |
+| `scripts/` | Deployment, fee measurement and browser smoke tests |
+| `tests/` | Unit and service tests for the public core |
+| `docs/` | Architecture, privacy model, evidence and roadmap |
 
-The integration into the TroqPay Global Account (onboarding, KYB, admission,
-compliance operations) is proprietary. This repository holds the open
-components, the deploy scripts and a reproducible test flow.
+## Testnet evidence
 
-## Run it
+The latest end-to-end TroqPay payment used a new US company and paid an
+existing TroqPay company 2 test USDC privately:
 
-Node 20+ and Microsoft Edge or Chrome.
+- public USDC funding: `67abf12fbc1c6c5de3e0faf68858d1bd7563781cbeb13f00917c5355e2bef2e1`
+- protected-balance entry: `eec84219e71a1b08824d367524590bcb7e30664da132ea813586799c9455d105`
+- private payment: `88363ba321522aabbfe380e03c170e4d20d9e8e5c1e215385a8cf710cd5b6bd1`
 
-```bash
-npm install
-npm test              # unit tests
-npm run typecheck
-npm run dev           # environment check: SDK boot, pools, public feed
-npm run smoke         # the same check in a headless browser
-```
+The private payment is successful in ledger `5,391,271`. Public observers see
+the payer call the pool, but not a plain recipient or amount. Additional
+transactions and contract addresses are in [docs/evidence.md](docs/evidence.md).
 
-**Verify a receipt (no keys).** Open the verification link a recipient shares
-(TroqPay verification page: _link added at submission_), or check the
-transaction hashes in [docs/evidence.md](docs/evidence.md) on Stellar Expert.
+## Prior work disclosure
 
-**Pay privately with your own testnet identities.** Create and fund two
-Stellar CLI identities named `privatepay-a` and `privatepay-b`
-(`stellar keys generate --fund privatepay-a --network testnet`), then:
+Before HackMeridian, TroqPay already had its Global Account product,
+authentication, onboarding, ledger, compliance operations and application
+infrastructure. An initial Private Yield proof of concept and the testnet
+contracts listed in `docs/evidence.md` also existed and are explicitly dated.
 
-```bash
-npm run smoke -- --transact             # public SPP XLM pool: register, deposit, pay, receipt, verify
-npm run smoke -- --transact --fee-bump  # same, with a sponsor identity troqpay-hack-sponsor paying fees
-```
+During HackMeridian we integrated Private Yield into the TroqPay product:
+global testnet onboarding, simulated Etherfuse approval, Privy wallet
+activation, automatic protected balances, private recipient discovery, the
+Send flow, sponsor hardening, payer attribution, receipts, walletless
+verification, balance UX and end-to-end evidence for two distinct companies.
 
-The smoke test signs in Node with the CLI keys; no key enters the page.
-
-**Deploy your own Private Yield.** `scripts/deploy-pools.sh`,
-`scripts/create-yield-vault.sh` and `scripts/deploy-share-pool.sh` recreate the
-ASP, pools, vault and share pool with you as admin (each script lists its
-inputs). Then point `src/config/troqpay-testnet-deployments.json` at your
-contracts and run `npm run smoke -- --yield`: admission, entry, private
-payment, receipt, view-key audit, simulated yield and redemption. It expects
-the Stellar CLI identities `troqpay-privatepay-admin` (the admin you deployed
-with) and `troqpay-hack` (holds test USDC for the simulated yield), and the
-view key file at `$PRIVATE_YIELD_KEYS_DIR/keys/troqpay-gvk-d.json`. The TroqPay pools only accept companies the
-operator admitted, as a real institution would.
+AI-assisted development used Codex and Claude Code for implementation,
+debugging, tests, documentation and submission preparation. The team reviewed
+and validated the resulting code and testnet transactions.
 
 ## Limits
 
-- **Testnet only**, test assets only.
+- **Testnet only.** All assets and accounts are test assets.
 - **Not audited.** SPP is a preview protocol without a trusted-setup ceremony;
-  the vault has no audit of this configuration.
-- **Yield is simulated** on testnet (USDC sent to the vault); there is no
-  strategy behind it.
-- **Entries and exits are public.** The pool hides who pays whom and, for value
-  that circulates between companies, how much. With few companies, an
-  observer can still match an entry with an exit of the same size.
-- **History window.** Stellar RPC keeps about 7 days. A new browser cannot
-  rebuild a pool older than that without an SPP bootnode, and the payer lookup
-  only covers that window; production records each pool call at the sponsor.
-- **Keys.** A company's privacy keys come from one wallet signature and stay in
-  its browser; the view key and the ASP admin key need an HSM or TEE in
-  production.
+  this vault configuration is also unaudited.
+- **Yield is simulated.** Test USDC is sent to the vault; there is no live
+  investment strategy behind the demo yield.
+- **KYB approval is simulated only in the demo.** It must use real provider and
+  compliance decisions before production.
+- **Entries and exits are public.** The pool hides payment details, but a small
+  anonymity set can still allow correlation.
+- **RPC history is bounded.** A production service must persist the indexed
+  events required for recovery and payer attribution.
+- **Operator secrets are not distributed.** Sponsor, ASP admin and view keys
+  require controlled production custody such as an HSM or TEE.
 
-More in [docs/privacy-model.md](docs/privacy-model.md) and [docs/roadmap.md](docs/roadmap.md).
+More detail: [architecture](docs/architecture.md),
+[privacy model](docs/privacy-model.md),
+[Private Yield design](docs/private-yield.md) and
+[roadmap](docs/roadmap.md).
 
-## Credits
+## Credits and license
 
 - [Stellar Private Payments](https://github.com/NethermindEth/stellar-private-payments)
   by Nethermind: pools, ASP, circuits and SDK.
-- [DeFindex](https://github.com/paltalabs/defindex) by Paltalabs: the vault and
-  its factory, used as deployed instances.
-- [Privy](https://privy.io): embedded wallets with raw-hash signing.
+- [DeFindex](https://github.com/paltalabs/defindex) by Paltalabs: vault and factory.
+- [Privy](https://privy.io): embedded wallet and raw-hash signing.
 
-See [NOTICE](NOTICE). Code in this repository: [Apache-2.0](LICENSE).
+See [NOTICE](NOTICE). Code in this repository is licensed under
+[Apache-2.0](LICENSE).

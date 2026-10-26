@@ -9,3 +9,7 @@ condition = "AND"
 paths = ['''src/config/[^/]+\.json''']
 regexTarget = "line"
 regexes = ['''"(tokenContractId|proving_key\.bin)"''']
+
+[[allowlists]]
+description = "Generated browser bundle; source files and Git history are scanned separately"
+paths = ['''^dist/''']

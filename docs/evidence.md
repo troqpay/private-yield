@@ -1,8 +1,9 @@
 # Evidence (Stellar Testnet)
 
 Everything below is on testnet with test assets. Open a transaction at
-`https://stellar.expert/explorer/testnet/tx/<hash>`. Built from 21 to 23
-October 2026, before HackMeridian, and declared in the submission.
+`https://stellar.expert/explorer/testnet/tx/<hash>`. The original proof was
+built from 21 to 23 October 2026, before HackMeridian, and is declared as prior
+work. The last section records the product integration completed at the event.
 
 ## Contracts
 
@@ -44,3 +45,21 @@ was spent yet.
 
 The view key decrypts the same payment: the recipient received 4.5454546
 shares (5.00 USDC at 1.1) and the payer kept 77.27 shares as change.
+
+## HackMeridian product integration, 25–26 October 2026
+
+A newly onboarded US company, `Global Demo Ltd`, received 20 test USDC,
+activated Private Yield and paid an existing TroqPay company 2 test USDC from
+the normal Send flow.
+
+| Step | Transaction | Result |
+|---|---|---|
+| Public test USDC funding | `67abf12fbc1c6c5de3e0faf68858d1bd7563781cbeb13f00917c5355e2bef2e1` | 20 test USDC arrived in the new Global Account |
+| Move into the protected balance | `eec84219e71a1b08824d367524590bcb7e30664da132ea813586799c9455d105` | the account showed 20 test USDC in Private Yield |
+| Private payment | `88363ba321522aabbfe380e03c170e4d20d9e8e5c1e215385a8cf710cd5b6bd1` | successful in ledger `5,391,271`; sponsor paid the fee; TroqPay showed 18 test USDC remaining |
+| Self-contained evaluator smoke | deposit `2f70ef0809f22c38b37e731b9f64b732c479b63515d64b7da81b1bdbfc022812`, payment `169f813a161ebd3eb3ee9139f650b4158ab043f777f826e044c5d67683610adc` | disposable Friendbot accounts completed registration, deposit, private payment, receipt and all four verification checks without local identities or secrets |
+
+The Etherfuse approval used by this onboarding was simulated only for the
+HackMeridian testnet environment. Wallet creation, trustline, funding, vault
+and pool calls, private payment and chain verification were real testnet
+operations.

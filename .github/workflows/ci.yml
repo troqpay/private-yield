@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluator-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+          cache: npm
+
+      - run: npm ci
+      - run: npm run check
+
+      - name: Smoke the built evaluator page
+        shell: bash
+        run: |
+          PORT=8080 node server/demo/main.ts > /tmp/private-yield-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8080/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npm run smoke -- --url http://127.0.0.1:8080/

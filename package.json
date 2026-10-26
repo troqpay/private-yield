@@ -11,10 +11,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "check": "npm test && npm run typecheck && npm run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "smoke": "node scripts/smoke.mjs",
-    "start": "node server/demo/main.ts"
+    "smoke:transactional": "node scripts/smoke.mjs --transact --ephemeral",
+    "start": "npm run build && node server/demo/main.ts"
   },
   "dependencies": {
     "@stellar/freighter-api": "6.0.1",

@@ -1,6 +1,7 @@
-// Environment smoke test against Stellar Testnet in headless Edge.
+// Environment smoke test against Stellar Testnet in headless Chrome or Edge.
 //   node scripts/smoke.mjs             boot + sync, no wallet
 //   node scripts/smoke.mjs --transact  register, deposit, private transfer, balances
+//   add --ephemeral to generate and fund disposable testnet identities in memory
 //   add --fee-bump to wrap every transaction in a fee bump paid by the testnet
 //   identity troqpay-hack-sponsor, as the TroqPay sponsor does
 //   add --troqpay-pools to run the same flow on the TroqPay USDC pool
@@ -42,6 +43,7 @@ const YIELD = Boolean(PAY_TO) || process.argv.includes("--yield");
 const INSPECT = process.argv.includes("--inspect");
 const TROQPAY_POOLS = YIELD || process.argv.includes("--troqpay-pools");
 const TRANSACT = TROQPAY_POOLS || process.argv.includes("--transact");
+const EPHEMERAL = process.argv.includes("--ephemeral");
 const FEE_BUMP = process.argv.includes("--fee-bump");
 const FEE_BUMP_BASE_FEE = "1000000"; // Soroban inclusion floor, as in troqpay-api
 // Stellar RPC only: Horizon is end-of-life.
@@ -58,8 +60,10 @@ const POOL = YIELD
 const USDC_SAC = "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA";
 const SIMULATED_YIELD = "20000000"; // 2 USDC sent to the vault by TroqPay, testnet only
 const PAGE_SEARCH = TROQPAY_POOLS ? "?smoke=1&deployment=troqpay" : "?smoke=1";
-const DEPOSIT = "100000000"; // 10 units (XLM or USDC) in stroops
-const TRANSFER = "40000000"; // 4 units
+// Friendbot funds a fresh account with 10,000 test XLM today, but keep the
+// disposable flow small so it also works if that amount changes.
+const DEPOSIT = EPHEMERAL ? "50000000" : "100000000"; // 5 or 10 units
+const TRANSFER = EPHEMERAL ? "20000000" : "40000000"; // 2 or 4 units
 const ASP_ADMIN = "troqpay-privatepay-admin";
 // The view key and the admitted leaves live outside the repository.
 const LOCAL_KEYS_DIR =
@@ -86,7 +90,7 @@ vite?.stderr.on("data", (chunk) => process.stderr.write(chunk));
 let browser;
 try {
   await waitForServer();
-  browser = await chromium.launch({ channel: "msedge", headless: true });
+  browser = await launchSmokeBrowser();
   if (DEMO_URL) {
     await demo();
   } else if (TRANSACT) {
@@ -137,7 +141,12 @@ async function demo() {
 }
 
 async function transact() {
-  const accounts = ["privatepay-a", "privatepay-b"].map(loadIdentity);
+  if (EPHEMERAL && (TROQPAY_POOLS || FEE_BUMP)) {
+    throw new Error("--ephemeral supports the public XLM pool without --fee-bump");
+  }
+  const accounts = EPHEMERAL
+    ? await createEphemeralAccounts()
+    : ["privatepay-a", "privatepay-b"].map(loadIdentity);
   const [a, b] = accounts;
   const keypairs = new Map(accounts.map((account) => [account.address, account.keypair]));
   const sponsor = FEE_BUMP ? loadIdentity("troqpay-hack-sponsor") : null;
@@ -396,6 +405,54 @@ function loadIdentity(alias) {
   const secret = execFileSync(STELLAR_CLI, ["keys", "secret", alias], { encoding: "utf8" }).trim();
   const keypair = Keypair.fromSecret(secret);
   return { alias, keypair, address: keypair.publicKey() };
+}
+
+async function createEphemeralAccounts() {
+  const accounts = [];
+  for (const alias of ["privatepay-a", "privatepay-b"]) {
+    const keypair = Keypair.random();
+    const address = keypair.publicKey();
+    let funded = false;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const response = await fetch(`https://friendbot.stellar.org/?addr=${encodeURIComponent(address)}`);
+      if (response.ok) {
+        funded = true;
+        break;
+      }
+      if (response.status !== 429) {
+        throw new Error(`Friendbot refused ${alias} with HTTP ${response.status}`);
+      }
+      await sleep(5_000);
+    }
+    if (!funded) throw new Error(`Friendbot rate-limited ${alias}`);
+    accounts.push({ alias, keypair, address });
+  }
+  return accounts;
+}
+
+async function launchSmokeBrowser() {
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  if (executablePath) return chromium.launch({ executablePath, headless: true });
+
+  const configuredChannel = process.env.PLAYWRIGHT_CHANNEL;
+  const channels = configuredChannel
+    ? [configuredChannel]
+    : process.platform === "win32"
+      ? ["msedge", "chrome"]
+      : ["chrome"];
+  let lastError;
+  for (const channel of channels) {
+    try {
+      return await chromium.launch({ channel, headless: true });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new Error(
+    `No supported Chromium browser was found. Install Chrome/Edge or set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH. ${
+      lastError instanceof Error ? lastError.message : ""
+    }`,
+  );
 }
 
 async function openPage(context, search) {
